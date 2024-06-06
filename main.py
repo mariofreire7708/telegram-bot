@@ -1,6 +1,6 @@
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ChatMemberHandler
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
 
 # Carregar variáveis de ambiente
@@ -30,6 +30,7 @@ async def confirmar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if user.id in user_data and user_data[user.id]['stage'] == 1:
         user_data[user.id]['stage'] = 2
         await context.bot.send_message(chat_id=user.id, text="Envie print da tela do seu perfil BC Game, vá no canto superior direito, meu perfil e mande print da tela")
+        await context.bot.send_photo(chat_id=user.id, photo=open('stage1.jpg', 'rb'))
         print("/confirmar command received")
 
 async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -41,6 +42,7 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             user_data[user.id]['stage'] = 3
             user_data[user.id]['profile_photo_message_id'] = update.message.message_id
             await context.bot.send_message(chat_id=user.id, text="Verifique sua identidade na BC Game 'nível básico', vá no seu perfil, configurações, verificação e envie print da tela da verificação básica completa.")
+            await context.bot.send_photo(chat_id=user.id, photo=open('stage2.jpg', 'rb'))
             print("Profile photo received and stage updated to 3")
 
         elif stage == 3:
@@ -58,12 +60,14 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             user_data[user.id]['stage'] = 6
             user_data[user.id]['deposit_photo_message_id'] = update.message.message_id
             await context.bot.send_message(chat_id=user.id, text="Último passo, deixe um comentário no vídeo 'https://....' confirmando que recebeu o bônus (não se preocupe, se não receber seu bônus pode simplesmente remover o comentário) e envie a print da tela.")
+            await context.bot.send_photo(chat_id=user.id, photo=open('stage3.jpg', 'rb'))
             print("Deposit photo received and stage updated to 6")
 
         elif stage == 6:
             user_data[user.id]['stage'] = 7
             user_data[user.id]['comment_confirmation_message_id'] = update.message.message_id
             await context.bot.send_message(chat_id=user.id, text="Concluído, aguarde um pouco até aparecer seu bônus na conta.")
+            await context.bot.send_photo(chat_id=user.id, photo=open('stage4.jpg', 'rb'))
 
             # Encaminhar todas as mensagens do usuário para o administrador
             await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['profile_photo_message_id'])
