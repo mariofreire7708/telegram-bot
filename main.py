@@ -2,7 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 import os
 
-# Coloque o token do seu bot aqui
+# Pegar o token da variável de ambiente
 TOKEN = os.getenv('TOKEN')
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -36,6 +36,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await query.message.reply_text("Digite /confirmar para continuar")
 
 def main() -> None:
+    if TOKEN is None:
+        raise ValueError("No TOKEN provided in environment variables")
+    
     application = Application.builder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
@@ -44,7 +47,7 @@ def main() -> None:
     application.add_handler(CallbackQueryHandler(button))
     
     # Usando o URL fornecido pelo Render para o webhook
-    webhook_url = f"https://<YOUR_RENDER_APP_NAME>.onrender.com/{TOKEN}"
+    webhook_url = f"https://telegram-bot-ep12.onrender.com/{TOKEN}"
     application.run_webhook(
         listen="0.0.0.0",
         port=int(os.environ.get("PORT", 8443)),
