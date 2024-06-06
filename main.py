@@ -1,6 +1,6 @@
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, JobQueue
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
 
 # Carregar variáveis de ambiente
@@ -8,7 +8,7 @@ load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
 ADMIN_USER_ID = 1641003146  # Seu ID de administrador
-GROUP_CHAT_ID = -1811495091
+GROUP_CHAT_ID = -1811495091  # Substitua pelo ID do seu grupo
 
 # Dicionário para armazenar informações dos usuários
 user_data = {}
@@ -103,13 +103,18 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def periodic_message(context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(chat_id=GROUP_CHAT_ID, text="Lembre-se, para receber seu bônus inicial, mande uma mensagem para @BCGameOferta_bot com a mensagem /bonus.")
+    print("Periodic message sent")
 
 if __name__ == "__main__":
     application = Application.builder().token(TOKEN).build()
-
-    job_queue = JobQueue()
-    job_queue.set_application(application)
-    job_queue.run_repeating(periodic_message, interval=120, first=0)  # Envia a mensagem a cada 2 minutos
+    
+    # Verifique se o job_queue está disponível
+    if application.job_queue:
+        job_queue = application.job_queue
+        job_queue.run_repeating(periodic_message, interval=120, first=0)  # Envia a mensagem a cada 2 minutos
+        print("Job queue configured")
+    else:
+        print("Job queue not available")
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("bonus", bonus))
