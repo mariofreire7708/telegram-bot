@@ -39,13 +39,13 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         if stage == 2:
             user_data[user.id]['stage'] = 3
-            user_data[user.id]['profile_photo'] = update.message.photo[-1].file_id
+            user_data[user.id]['profile_photo_message_id'] = update.message.message_id
             await context.bot.send_message(chat_id=user.id, text="Verifique sua identidade na BC Game 'nível básico', vá no seu perfil, configurações, verificação e envie print da tela da verificação básica completa.")
             print("Profile photo received and stage updated to 3")
 
         elif stage == 3:
             user_data[user.id]['stage'] = 4
-            user_data[user.id]['verification_photo'] = update.message.photo[-1].file_id
+            user_data[user.id]['verification_photo_message_id'] = update.message.message_id
             keyboard = [
                 [InlineKeyboardButton("25R$ grátis", callback_data='gratis')],
                 [InlineKeyboardButton("100R$ extra", callback_data='extra')]
@@ -56,20 +56,20 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         elif stage == 5:
             user_data[user.id]['stage'] = 6
-            user_data[user.id]['deposit_photo'] = update.message.photo[-1].file_id
+            user_data[user.id]['deposit_photo_message_id'] = update.message.message_id
             await context.bot.send_message(chat_id=user.id, text="Último passo, deixe um comentário no vídeo 'https://....' confirmando que recebeu o bônus (não se preocupe, se não receber seu bônus pode simplesmente remover o comentário) e envie a print da tela.")
             print("Deposit photo received and stage updated to 6")
 
         elif stage == 6:
             user_data[user.id]['stage'] = 7
-            user_data[user.id]['comment_confirmation'] = update.message.photo[-1].file_id
+            user_data[user.id]['comment_confirmation_message_id'] = update.message.message_id
             await context.bot.send_message(chat_id=user.id, text="Concluído, aguarde um pouco até aparecer seu bônus na conta.")
 
             # Encaminhar todas as mensagens do usuário para o administrador
-            await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['profile_photo'])
-            await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['verification_photo'])
-            await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['deposit_photo'])
-            await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['comment_confirmation'])
+            await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['profile_photo_message_id'])
+            await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['verification_photo_message_id'])
+            await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['deposit_photo_message_id'])
+            await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['comment_confirmation_message_id'])
 
             await context.bot.send_message(chat_id=ADMIN_USER_ID, text=f"Usuário {user.first_name} completou o processo.")
             print("Comment confirmation received and process completed")
