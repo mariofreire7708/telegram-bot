@@ -96,7 +96,7 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("bonus", bonus))
     application.add_handler(CommandHandler("confirmar", confirmar))
-    application.add_handler(MessageHandler(filters.PHOTO & filters.ALL, receive_photo))
+    application.add_handler(MessageHandler(filters.PHOTO, receive_photo))
     application.add_handler(CallbackQueryHandler(button))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^/comentariodone$'), comment_done))
 
