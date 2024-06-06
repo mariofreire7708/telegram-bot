@@ -60,14 +60,13 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             user_data[user.id]['stage'] = 6
             user_data[user.id]['deposit_photo_message_id'] = update.message.message_id
             await context.bot.send_message(chat_id=user.id, text="Último passo, deixe um comentário no vídeo 'https://....' confirmando que recebeu o bônus (não se preocupe, se não receber seu bônus pode simplesmente remover o comentário) e envie a print da tela.")
-            await context.bot.send_photo(chat_id=user.id, photo='https://github.com/mariofreire7708/telegram-bot/blob/main/stage3.jpg.png?raw=true')
+            await context.bot.send_photo(chat_id=user.id, photo='https://github.com/mariofreire7708/telegram-bot/blob/main/stage4.jpg.png?raw=true')
             print("Deposit photo received and stage updated to 6")
 
         elif stage == 6:
             user_data[user.id]['stage'] = 7
             user_data[user.id]['comment_confirmation_message_id'] = update.message.message_id
             await context.bot.send_message(chat_id=user.id, text="Concluído, aguarde um pouco até aparecer seu bônus na conta.")
-            await context.bot.send_photo(chat_id=user.id, photo='https://github.com/mariofreire7708/telegram-bot/blob/main/stage4.jpg.png?raw=true')
 
             # Encaminhar todas as mensagens do usuário para o administrador
             await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['profile_photo_message_id'])
@@ -92,6 +91,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     user_data[user.id]['stage'] = 5
     await context.bot.send_message(chat_id=user.id, text="Envie o print do depósito para continuar.")
+    await context.bot.send_photo(chat_id=user.id, photo='https://github.com/mariofreire7708/telegram-bot/blob/main/stage3.jpg.png?raw=true')
     print(f"Button {query.data} clicked and stage updated to 5")
 
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
