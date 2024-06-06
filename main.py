@@ -4,11 +4,9 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from google.cloud import vision
 from google.oauth2 import service_account
-from dotenv import load_dotenv
-from PIL import Image
-import imagehash
 
 # Carregar variáveis de ambiente
+from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
@@ -21,15 +19,19 @@ client = vision.ImageAnnotatorClient(credentials=credentials)
 # Dicionário para armazenar informações dos usuários
 user_data = {}
 
-def compare_images(image_path, example_path):
-    image = Image.open(image_path)
-    example = Image.open(example_path)
-    
-    hash0 = imagehash.average_hash(image)
-    hash1 = imagehash.average_hash(example)
-    
-    cutoff = 5  # Sensibilidade da comparação
-    return hash0 - hash1 < cutoff
+def compare_images(image1_path, image2_path):
+    # Função para comparar imagens
+    import imagehash
+    from PIL import Image
+
+    hash0 = imagehash.average_hash(Image.open(image1_path))
+    hash1 = imagehash.average_hash(Image.open(image2_path))
+
+    cutoff = 5  # Limite de diferença permitido
+    if hash0 - hash1 < cutoff:
+        return True
+    else:
+        return False
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
@@ -48,8 +50,7 @@ async def confirmar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     if user.id in user_data and user_data[user.id]['stage'] == 1:
         user_data[user.id]['stage'] = 2
-        await context.bot.send_message(chat_id=user.id, text="Envie print da tela do seu perfil BC Game, vá no canto superior direito, meu perfil e mande print da tela. Veja o exemplo abaixo.")
-        await context.bot.send_photo(chat_id=user.id, photo=open('stage1.jpg', 'rb'))
+        await context.bot.send_message(chat_id=user.id, text="Envie print da tela do seu perfil BC Game, vá no canto superior direito, meu perfil e mande print da tela")
         print("/confirmar command received")
 
 async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -60,14 +61,19 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         photo_path = f'{user.id}_{stage}.jpg'
         await photo_file.download(photo_path)
 
-        # Comparar a imagem enviada com a imagem de exemplo
-        example_path = f'stage{stage}.jpg'
-        if compare_images(photo_path, example_path):
+        example_photo_path = f'stage{stage}.jpg'
+
+        # Use Google Cloud Vision to analyze the photo
+        with io.open(photo_path, 'rb') as image_file:
+            content = image_file.read()
+        image = vision.Image(content=content)
+        response = client.document_text_detection(image=image)
+
+        if compare_images(photo_path, example_photo_path):
             if stage == 2:
                 user_data[user.id]['stage'] = 3
                 user_data[user.id]['profile_photo'] = update.message.photo[-1].file_id
-                await context.bot.send_message(chat_id=user.id, text="Verifique sua identidade na BC Game 'nível básico', vá no seu perfil, configurações, verificação e envie print da tela da verificação básica completa. Veja o exemplo abaixo.")
-                await context.bot.send_photo(chat_id=user.id, photo=open('stage2.jpg', 'rb'))
+                await context.bot.send_message(chat_id=user.id, text="Verifique sua identidade na BC Game 'nível básico', vá no seu perfil, configurações, verificação e envie print da tela da verificação básica completa.")
                 print("Profile photo received and stage updated to 3")
 
             elif stage == 3:
@@ -80,13 +86,6 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 await context.bot.send_message(chat_id=user.id, text="4º Você quer receber 25R$ grátis sem depósito ou se depositar 100R$ ou mais recebe 100R$ extra.", reply_markup=reply_markup)
                 print("Verification photo received and stage updated to 4")
-
-            elif stage == 5:
-                user_data[user.id]['stage'] = 6
-                user_data[user.id]['deposit_photo'] = update.message.photo[-1].file_id
-                await context.bot.send_message(chat_id=user.id, text="Último passo, deixe um comentário no vídeo 'https://....' confirmando que recebeu o bônus (não se preocupe, se não receber seu bônus pode simplesmente remover o comentário). Veja o exemplo abaixo.")
-                await context.bot.send_photo(chat_id=user.id, photo=open('stage4.jpg', 'rb'))
-                print("Deposit photo received and stage updated to 6")
         else:
             await context.bot.send_message(chat_id=user.id, text="A imagem enviada não é válida. Por favor, envie uma imagem correta.")
             print("Invalid photo received")
@@ -98,12 +97,10 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = query.from_user
     if query.data == 'gratis':
         user_data[user.id]['bonus_choice'] = 'gratis'
-        await query.edit_message_text(text="Você escolheu receber 25R$ grátis sem depósito. Crie um depósito em USDT network BEP20 e mande print da tela com o código QR do depósito. Veja o exemplo abaixo.")
-        await context.bot.send_photo(chat_id=user.id, photo=open('stage3.jpg', 'rb'))
+        await query.edit_message_text(text="Você escolheu receber 25R$ grátis sem depósito. Crie um depósito em USDT network BEP20 e mande print da tela com o código QR do depósito.")
     elif query.data == 'extra':
         user_data[user.id]['bonus_choice'] = 'extra'
-        await query.edit_message_text(text="Você escolheu depositar 100R$ ou mais para receber 100R$ extra. Crie um depósito em USDT network BEP20 e mande print da tela com o código QR do depósito. Veja o exemplo abaixo.")
-        await context.bot.send_photo(chat_id=user.id, photo=open('stage3.jpg', 'rb'))
+        await query.edit_message_text(text="Você escolheu depositar 100R$ ou mais para receber 100R$ extra. Crie um depósito em USDT network BEP20 e mande print da tela com o código QR do depósito.")
 
     user_data[user.id]['stage'] = 5
     await context.bot.send_message(chat_id=user.id, text="Envie o print do depósito para continuar.")
@@ -112,10 +109,20 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def receive_deposit_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     if user.id in user_data and user_data[user.id]['stage'] == 5:
-        user_data[user.id]['deposit_photo'] = update.message.photo[-1].file_id
-        await context.bot.send_message(chat_id=user.id, text="Último passo, deixe um comentário no vídeo 'https://....' confirmando que recebeu o bônus (não se preocupe, se não receber seu bônus pode simplesmente remover o comentário).")
-        user_data[user.id]['stage'] = 6
-        print("Deposit photo received and stage updated to 6")
+        photo_file = await context.bot.get_file(update.message.photo[-1].file_id)
+        photo_path = f'{user.id}_deposit.jpg'
+        await photo_file.download(photo_path)
+
+        example_photo_path = 'stage3.jpg'
+
+        if compare_images(photo_path, example_photo_path):
+            user_data[user.id]['deposit_photo'] = update.message.photo[-1].file_id
+            await context.bot.send_message(chat_id=user.id, text="Último passo, deixe um comentário no vídeo 'https://....' confirmando que recebeu o bônus (não se preocupe, se não receber seu bônus pode simplesmente remover o comentário).")
+            user_data[user.id]['stage'] = 6
+            print("Deposit photo received and stage updated to 6")
+        else:
+            await context.bot.send_message(chat_id=user.id, text="A imagem enviada não é válida. Por favor, envie uma imagem correta.")
+            print("Invalid deposit photo received")
 
 async def comment_done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
@@ -137,9 +144,6 @@ async def consultar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 await context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=f"{key.replace('_', ' ').capitalize()}")
             else:
                 msg += f"{key.capitalize()}: {value}\n"
-       Vou continuar a explicar o código:
-
-```python
         await context.bot.send_message(chat_id=update.effective_chat.id, text=msg)
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Nenhum dado encontrado para este usuário.")
@@ -154,6 +158,6 @@ if __name__ == "__main__":
     application.add_handler(CallbackQueryHandler(button))
     application.add_handler(CommandHandler("consultar", consultar))
     application.add_handler(MessageHandler(filters.PHOTO, receive_deposit_photo))
-    application.add_handler(MessageHandler(filters.TEXT & filters.regex(r'^/comentariodone$'), comment_done))
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^/comentariodone$'), comment_done))
 
     application.run_polling()
