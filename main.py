@@ -1,6 +1,6 @@
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, JobQueue
 from dotenv import load_dotenv
 
 # Carregar variáveis de ambiente
@@ -100,8 +100,14 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                                        text=f"Olá {member.first_name}, bem-vindo ao grupo! Se quiser receber o seu bônus inicial na BC Game, mande uma mensagem para @BCGameOferta_bot com a mensagem /bonus.")
         print(f"Welcome message sent to {member.first_name}")
 
+async def periodic_message(context: ContextTypes.DEFAULT_TYPE) -> None:
+    await context.bot.send_message(chat_id='@YourGroupNameOrID', text="Lembre-se, para receber seu bônus inicial, mande uma mensagem para @BCGameOferta_bot com a mensagem /bonus.")
+
 if __name__ == "__main__":
     application = Application.builder().token(TOKEN).build()
+
+    job_queue = application.job_queue
+    job_queue.run_repeating(periodic_message, interval=120, first=0)  # Envia a mensagem a cada 2 minutos
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("bonus", bonus))
