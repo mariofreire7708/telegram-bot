@@ -13,7 +13,7 @@ TOKEN = os.getenv('TOKEN')
 user_data = {}
 
 # ID do administrador que receberá as informações compiladas
-ADMIN_USER_ID = "YOUR_ADMIN_USER_ID"  # Substitua pelo seu User ID ou Username
+ADMIN_USER_ID = os.getenv('ADMIN_USER_ID')  # Substitua pelo seu User ID ou Username
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
@@ -119,8 +119,6 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("confirmar", confirmar))
     application.add_handler(MessageHandler(filters.PHOTO & filters.User(user_data.keys()), receive_photo))
     application.add_handler(CallbackQueryHandler(button))
-    application.add_handler(CommandHandler("consultar", consultar))
-    application.add_handler(MessageHandler(filters.PHOTO, receive_deposit_photo))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^/comentariodone$'), comment_done))
 
     application.run_webhook(
