@@ -4,9 +4,10 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from google.cloud import vision
 from google.oauth2 import service_account
+from dotenv import load_dotenv
+from PIL import Image, ImageChops, ImageStat
 
 # Carregar variáveis de ambiente
-from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
@@ -18,6 +19,16 @@ client = vision.ImageAnnotatorClient(credentials=credentials)
 
 # Dicionário para armazenar informações dos usuários
 user_data = {}
+
+# Função para verificar a similaridade entre duas imagens
+def verificar_imagem_semelhante(image_path_1, image_path_2):
+    image1 = Image.open(image_path_1).convert('RGB')
+    image2 = Image.open(image_path_2).convert('RGB')
+
+    diff = ImageChops.difference(image1, image2)
+    stat = ImageStat.Stat(diff)
+    diff_ratio = sum(stat.mean) / (len(stat.mean) * 255)
+    return diff_ratio < 0.1  # Ajuste o valor conforme necessário para a similaridade
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
@@ -37,6 +48,7 @@ async def confirmar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if user.id in user_data and user_data[user.id]['stage'] == 1:
         user_data[user.id]['stage'] = 2
         await context.bot.send_message(chat_id=user.id, text="Envie print da tela do seu perfil BC Game, vá no canto superior direito, meu perfil e mande print da tela")
+        await context.bot.send_photo(chat_id=user.id, photo=open('stage1.jpg', 'rb'), caption="Exemplo de print da tela do perfil BC Game")
         print("/confirmar command received")
 
 async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -47,21 +59,20 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         photo_path = f'{user.id}_{stage}.jpg'
         await photo_file.download(photo_path)
 
-        # Use Google Cloud Vision to analyze the photo
-        with io.open(photo_path, 'rb') as image_file:
-            content = image_file.read()
-        image = vision.Image(content=content)
-        response = client.document_text_detection(image=image)
-
-        # Exemplo de validação: verificar se certo texto está presente
-        if 'expected text' in response.full_text_annotation.text:
-            if stage == 2:
+        # Use Google Cloud Vision para analisar a foto
+        if stage == 2:
+            if verificar_imagem_semelhante(photo_path, 'stage1.jpg'):
                 user_data[user.id]['stage'] = 3
                 user_data[user.id]['profile_photo'] = update.message.photo[-1].file_id
                 await context.bot.send_message(chat_id=user.id, text="Verifique sua identidade na BC Game 'nível básico', vá no seu perfil, configurações, verificação e envie print da tela da verificação básica completa.")
+                await context.bot.send_photo(chat_id=user.id, photo=open('stage2.jpg', 'rb'), caption="Exemplo de print da verificação básica completa")
                 print("Profile photo received and stage updated to 3")
+            else:
+                await context.bot.send_message(chat_id=user.id, text="A imagem enviada não é válida. Por favor, envie uma imagem correta.")
+                print("Invalid profile photo received")
 
-            elif stage == 3:
+        elif stage == 3:
+            if verificar_imagem_semelhante(photo_path, 'stage2.jpg'):
                 user_data[user.id]['stage'] = 4
                 user_data[user.id]['verification_photo'] = update.message.photo[-1].file_id
                 keyboard = [
@@ -71,9 +82,21 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 await context.bot.send_message(chat_id=user.id, text="4º Você quer receber 25R$ grátis sem depósito ou se depositar 100R$ ou mais recebe 100R$ extra.", reply_markup=reply_markup)
                 print("Verification photo received and stage updated to 4")
-        else:
-            await context.bot.send_message(chat_id=user.id, text="A imagem enviada não é válida. Por favor, envie uma imagem correta.")
-            print("Invalid photo received")
+            else:
+                await context.bot.send_message(chat_id=user.id, text="A imagem enviada não é válida. Por favor, envie uma imagem correta.")
+                print("Invalid verification photo received")
+
+        elif stage == 4:
+            if verificar_imagem_semelhante(photo_path, 'stage3.jpg'):
+                user_data[user.id]['stage'] = 5
+                user_data[user.id]['deposit_photo'] = update.message.photo[-1].file_id
+                await context.bot.send_message(chat_id=user.id, text="Último passo, deixe um comentário no vídeo 'https://....' confirmando que recebeu o bônus (não se preocupe, se não receber seu bônus pode simplesmente remover o comentário).")
+                await context.bot.send_photo(chat_id=user.id, photo=open('stage4.jpg', 'rb'), caption="Exemplo de print do comentário no vídeo")
+                user_data[user.id]['stage'] = 6
+                print("Deposit photo received and stage updated to 5")
+            else:
+                await context.bot.send_message(chat_id=user.id, text="A imagem enviada não é válida. Por favor, envie uma imagem correta.")
+                print("Invalid deposit photo received")
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -121,7 +144,7 @@ async def consultar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 msg += f"{key.capitalize()}: {value}\n"
         await context.bot.send_message(chat_id=update.effective_chat.id, text=msg)
     else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Nenhum dado encontrado para este usuário.")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Neno dado encontrado para este usuário.")
 
 if __name__ == "__main__":
     application = Application.builder().token(TOKEN).build()
@@ -129,9 +152,8 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("bonus", bonus))
     application.add_handler(CommandHandler("confirmar", confirmar))
-    application.add_handler(MessageHandler(filters.PHOTO & filters.User(user_data.keys()), receive_photo))
+    application.add_handler(MessageHandler(filters.PHOTO & filters.USER(user_data.keys()), receive_photo))
     application.add_handler(CallbackQueryHandler(button))
     application.add_handler(CommandHandler("consultar", consultar))
-    application.add_handler(CommandHandler("comment_done", comment_done))
 
     application.run_polling()
