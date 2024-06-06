@@ -21,7 +21,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def bonus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     user_data[user.id] = {'stage': 1}
-    await context.bot.send_message(chat_id=user.id, text="1º Já criou conta com o código MFREIRE no registo ou pelo link 'https://....'? Digite /confirmar para continuar")
+    await context.bot.send_message(chat_id=user.id, text="Primeiramente, AVISO! Todos os passos deste processo têm de ser completados, caso contrario nao irá receber seu bonus, leia tudo com atencao e envie tudo o que é pedido. Já criou conta com o código MFREIRE no registo ou pelo link https://bcgame.top/i-mariofreire-n/?spin=true . Se j«á criou sua conta digite /confirmar para continuar")
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Verifique suas mensagens privadas para continuar o processo.")
     print("/bonus command received")
 
@@ -29,7 +29,7 @@ async def confirmar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     if user.id in user_data and user_data[user.id]['stage'] == 1:
         user_data[user.id]['stage'] = 2
-        await context.bot.send_message(chat_id=user.id, text="Envie print da tela do seu perfil BC Game, vá no canto superior direito, meu perfil e mande print da tela")
+        await context.bot.send_message(chat_id=user.id, text="Envie print da tela do seu perfil BC Game, vá no canto superior direito, meu perfil e mande print da tela. (Como no exemplo da print enviada)")
         await context.bot.send_photo(chat_id=user.id, photo='https://github.com/mariofreire7708/telegram-bot/blob/main/stage1.jpg.png?raw=true')
         print("/confirmar command received")
 
@@ -41,7 +41,7 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         if stage == 2:
             user_data[user.id]['stage'] = 3
             user_data[user.id]['profile_photo_message_id'] = update.message.message_id
-            await context.bot.send_message(chat_id=user.id, text="Verifique sua identidade na BC Game 'nível básico', vá no seu perfil, configurações, verificação e envie print da tela da verificação básica completa.")
+            await context.bot.send_message(chat_id=user.id, text="Verifique sua identidade na BC Game 'nível básico', vá no seu perfil, configurações, verificação e envie print da tela da verificação básica completa. Tem de fazer a verificaçao basica para continuar!")
             await context.bot.send_photo(chat_id=user.id, photo='https://github.com/mariofreire7708/telegram-bot/blob/main/stage2.jpg.png?raw=true')
             print("Profile photo received and stage updated to 3")
 
@@ -49,11 +49,11 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             user_data[user.id]['stage'] = 4
             user_data[user.id]['verification_photo_message_id'] = update.message.message_id
             keyboard = [
-                [InlineKeyboardButton("25R$ grátis", callback_data='gratis')],
-                [InlineKeyboardButton("100R$ extra", callback_data='extra')]
+                [InlineKeyboardButton("25R$ grátis SEM DEPOSITAR", callback_data='gratis')],
+                [InlineKeyboardButton("100R$ extra SE DEPOSITAR 100R$", callback_data='extra')]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            await context.bot.send_message(chat_id=user.id, text="4º Você quer receber 25R$ grátis sem depósito ou se depositar 100R$ ou mais recebe 100R$ extra.", reply_markup=reply_markup)
+            await context.bot.send_message(chat_id=user.id, text="Você quer receber 25R$ grátis sem depósito ou se depositar 100R$ ou mais recebe 100R$ extra.", reply_markup=reply_markup)
             print("Verification photo received and stage updated to 4")
 
         elif stage == 5:
@@ -66,7 +66,7 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         elif stage == 6:
             user_data[user.id]['stage'] = 7
             user_data[user.id]['comment_confirmation_message_id'] = update.message.message_id
-            await context.bot.send_message(chat_id=user.id, text="Concluído, aguarde um pouco até aparecer seu bônus na conta.")
+            await context.bot.send_message(chat_id=user.id, text="Concluído, seu dados agora serao processados e irá receber seu bonus em breve! Aguarde um pouco até aparecer seu bônus na conta. Obrigado")
 
             # Encaminhar todas as mensagens do usuário para o administrador
             await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['profile_photo_message_id'])
@@ -84,10 +84,10 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = query.from_user
     if query.data == 'gratis':
         user_data[user.id]['bonus_choice'] = 'gratis'
-        await query.edit_message_text(text="Você escolheu receber 25R$ grátis sem depósito. Crie um depósito em USDT network BEP20 e mande print da tela com o código QR do depósito.")
+        await query.edit_message_text(text="Você escolheu receber 25R$ grátis sem depósito. Crie um depósito em USDT network BEP20 e mande print da tela com o código QR do depósito. (Envie print como a mostrada no exemplo)")
     elif query.data == 'extra':
         user_data[user.id]['bonus_choice'] = 'extra'
-        await query.edit_message_text(text="Você escolheu depositar 100R$ ou mais para receber 100R$ extra. Crie um depósito em USDT network BEP20 e mande print da tela com o código QR do depósito.")
+        await query.edit_message_text(text="Você escolheu depositar 100R$ ou mais para receber 100R$ extra. Crie um depósito em USDT network BEP20 e mande print da tela com o código QR do depósito. (Envie print como a mostrada no exemplo)")
 
     user_data[user.id]['stage'] = 5
     await context.bot.send_message(chat_id=user.id, text="Envie o print do depósito para continuar.")
