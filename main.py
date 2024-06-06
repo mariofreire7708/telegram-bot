@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
-ADMIN_USER_ID = 1641003146  # Seu ID de administrador
+ADMIN_USER_ID = 1641003146
+GROUP_CHAT_ID = @casinoofferss
 
 # Dicionário para armazenar informações dos usuários
 user_data = {}
@@ -101,12 +102,13 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         print(f"Welcome message sent to {member.first_name}")
 
 async def periodic_message(context: ContextTypes.DEFAULT_TYPE) -> None:
-    await context.bot.send_message(chat_id='@YourGroupNameOrID', text="Lembre-se, para receber seu bônus inicial, mande uma mensagem para @BCGameOferta_bot com a mensagem /bonus.")
+    await context.bot.send_message(chat_id=GROUP_CHAT_ID, text="Lembre-se, para receber seu bônus inicial, mande uma mensagem para @BCGameOferta_bot com a mensagem /bonus.")
 
 if __name__ == "__main__":
     application = Application.builder().token(TOKEN).build()
 
-    job_queue = application.job_queue
+    job_queue = JobQueue()
+    job_queue.set_application(application)
     job_queue.run_repeating(periodic_message, interval=120, first=0)  # Envia a mensagem a cada 2 minutos
 
     application.add_handler(CommandHandler("start", start))
