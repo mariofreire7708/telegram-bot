@@ -1,6 +1,7 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 import os
+import io
 
 # Pegar o token da variável de ambiente
 TOKEN = os.getenv('TOKEN')
@@ -78,6 +79,24 @@ async def comment_done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await context.bot.send_message(chat_id=user.id, text="Concluído, aguarde um pouco até aparecer seu bônus na conta.")
         print("Comment confirmation received and process completed")
 
+async def consultar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user = update.message.from_user
+    if user.id in user_data:
+        data = user_data[user.id]
+        msg = f"Dados do usuário {user.first_name}:\n"
+        for key, value in data.items():
+            if key.endswith('_photo'):
+                file = await context.bot.get_file(value)
+                photo = io.BytesIO()
+                await file.download(out=photo)
+                photo.seek(0)
+                await context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=f"{key.replace('_', ' ').capitalize()}")
+            else:
+                msg += f"{key.capitalize()}: {value}\n"
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=msg)
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Nenhum dado encontrado para este usuário.")
+
 def main() -> None:
     if TOKEN is None:
         raise ValueError("No TOKEN provided in environment variables")
@@ -87,6 +106,7 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("bonus", bonus))
     application.add_handler(CommandHandler("confirmar", confirmar))
+    application.add_handler(CommandHandler("consultar", consultar))
     application.add_handler(MessageHandler(filters.PHOTO, receive_photo))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^/comentar$'), comment_done))
     application.add_handler(CallbackQueryHandler(button))
