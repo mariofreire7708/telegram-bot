@@ -2,9 +2,9 @@ import os
 import io
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+from dotenv import load_dotenv
 
 # Carregar variáveis de ambiente
-from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
@@ -22,6 +22,7 @@ async def bonus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     user_data[user.id] = {'stage': 1}
     await context.bot.send_message(chat_id=user.id, text="1º Já criou conta com o código MFREIRE no registo ou pelo link 'https://....'? Digite /confirmar para continuar")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Verifique suas mensagens privadas para continuar o processo.")
     print("/bonus command received")
 
 async def confirmar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
