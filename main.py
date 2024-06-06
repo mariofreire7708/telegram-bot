@@ -45,12 +45,15 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         photo_file = await context.bot.get_file(update.message.photo[-1].file_id)
         photo_path = f'{user.id}_{stage}.jpg'
         await photo_file.download(photo_path)
+        print(f"Photo received from {user.first_name} for stage {stage}")
 
         # Use Google Cloud Vision to analyze the photo
         with io.open(photo_path, 'rb') as image_file:
             content = image_file.read()
         image = vision.Image(content=content)
         response = client.document_text_detection(image=image)
+
+        print(f"Vision API response: {response.full_text_annotation.text}")
 
         # Exemplo de validação: verificar se certo texto está presente
         if 'expected text' in response.full_text_annotation.text:
