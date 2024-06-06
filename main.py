@@ -22,14 +22,13 @@ user_data = {}
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text=f"Olá {user.first_name}, bem-vindo ao grupo! Se quiser receber o seu bônus inicial na cassino BC Game digite /bonus. Bônus inicial é em Crypto, se não sabe como trabalhar com criptomoedas aconselho a ver algum vídeo no YouTube referente ao mesmo. Bônus não tem nenhum tipo de bloqueio ou rollover, apenas aposte 1 vez e pode sacar.")
+                                   text=f"Olá {user.first_name}, bem-vindo ao grupo! Se quiser receber o seu bônus inicial na BC Game, mande uma mensagem para @BCGameOferta_bot com a mensagem /bonus.")
     print(f"/start command received from {user.first_name}")
 
 async def bonus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     user_data[user.id] = {'stage': 1}
     await context.bot.send_message(chat_id=user.id, text="1º Já criou conta com o código MFREIRE no registo ou pelo link 'https://....'? Digite /confirmar para continuar")
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Verifique suas mensagens privadas para continuar o processo.")
     print("/bonus command received")
 
 async def confirmar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
