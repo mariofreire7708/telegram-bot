@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
-ADMIN_USER_ID = 1641003146
-GROUP_CHAT_ID = @casinoofferss
+ADMIN_USER_ID = 1641003146  # Seu ID de administrador
+GROUP_CHAT_ID = 1811495091
 
 # Dicionário para armazenar informações dos usuários
 user_data = {}
