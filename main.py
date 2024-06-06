@@ -19,20 +19,6 @@ client = vision.ImageAnnotatorClient(credentials=credentials)
 # Dicionário para armazenar informações dos usuários
 user_data = {}
 
-def compare_images(image1_path, image2_path):
-    # Função para comparar imagens
-    import imagehash
-    from PIL import Image
-
-    hash0 = imagehash.average_hash(Image.open(image1_path))
-    hash1 = imagehash.average_hash(Image.open(image2_path))
-
-    cutoff = 5  # Limite de diferença permitido
-    if hash0 - hash1 < cutoff:
-        return True
-    else:
-        return False
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     await context.bot.send_message(chat_id=update.effective_chat.id,
@@ -61,15 +47,14 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         photo_path = f'{user.id}_{stage}.jpg'
         await photo_file.download(photo_path)
 
-        example_photo_path = f'stage{stage}.jpg'
-
         # Use Google Cloud Vision to analyze the photo
         with io.open(photo_path, 'rb') as image_file:
             content = image_file.read()
         image = vision.Image(content=content)
         response = client.document_text_detection(image=image)
 
-        if compare_images(photo_path, example_photo_path):
+        # Exemplo de validação: verificar se certo texto está presente
+        if 'expected text' in response.full_text_annotation.text:
             if stage == 2:
                 user_data[user.id]['stage'] = 3
                 user_data[user.id]['profile_photo'] = update.message.photo[-1].file_id
@@ -109,20 +94,10 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def receive_deposit_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     if user.id in user_data and user_data[user.id]['stage'] == 5:
-        photo_file = await context.bot.get_file(update.message.photo[-1].file_id)
-        photo_path = f'{user.id}_deposit.jpg'
-        await photo_file.download(photo_path)
-
-        example_photo_path = 'stage3.jpg'
-
-        if compare_images(photo_path, example_photo_path):
-            user_data[user.id]['deposit_photo'] = update.message.photo[-1].file_id
-            await context.bot.send_message(chat_id=user.id, text="Último passo, deixe um comentário no vídeo 'https://....' confirmando que recebeu o bônus (não se preocupe, se não receber seu bônus pode simplesmente remover o comentário).")
-            user_data[user.id]['stage'] = 6
-            print("Deposit photo received and stage updated to 6")
-        else:
-            await context.bot.send_message(chat_id=user.id, text="A imagem enviada não é válida. Por favor, envie uma imagem correta.")
-            print("Invalid deposit photo received")
+        user_data[user.id]['deposit_photo'] = update.message.photo[-1].file_id
+        await context.bot.send_message(chat_id=user.id, text="Último passo, deixe um comentário no vídeo 'https://....' confirmando que recebeu o bônus (não se preocupe, se não receber seu bônus pode simplesmente remover o comentário).")
+        user_data[user.id]['stage'] = 6
+        print("Deposit photo received and stage updated to 6")
 
 async def comment_done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
@@ -160,4 +135,10 @@ if __name__ == "__main__":
     application.add_handler(MessageHandler(filters.PHOTO, receive_deposit_photo))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^/comentariodone$'), comment_done))
 
-    application.run_polling()
+    # Usando run_webhook para evitar problema de porta
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.environ.get('PORT', 8443)),
+        url_path=TOKEN,
+        webhook_url=f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
+    )
