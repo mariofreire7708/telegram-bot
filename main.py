@@ -88,7 +88,7 @@ def main() -> None:
     application.add_handler(CommandHandler("bonus", bonus))
     application.add_handler(CommandHandler("confirmar", confirmar))
     application.add_handler(MessageHandler(filters.PHOTO, receive_photo))
-    application.add_handler(MessageHandler(filters.TEXT & filters.regex(r'^/comentar$'), comment_done))
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^/comentar$'), comment_done))
     application.add_handler(CallbackQueryHandler(button))
 
     # Usando o URL fornecido pelo Render para o webhook
