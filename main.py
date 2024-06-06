@@ -2,19 +2,12 @@ import os
 import io
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
-from google.cloud import vision
-from google.oauth2 import service_account
 
 # Carregar variáveis de ambiente
 from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-
-# Configurar a Google Cloud Vision API
-credentials = service_account.Credentials.from_service_account_file(GOOGLE_APPLICATION_CREDENTIALS)
-client = vision.ImageAnnotatorClient(credentials=credentials)
 
 # Dicionário para armazenar informações dos usuários
 user_data = {}
@@ -47,39 +40,23 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await photo_file.download(photo_path)
         print(f"Photo received from {user.first_name} for stage {stage}")
 
-        # Use Google Cloud Vision to analyze the photo
-        try:
-            with io.open(photo_path, 'rb') as image_file:
-                content = image_file.read()
-            image = vision.Image(content=content)
-            response = client.document_text_detection(image=image)
+        # Armazenar a foto no user_data
+        if stage == 2:
+            user_data[user.id]['stage'] = 3
+            user_data[user.id]['profile_photo'] = update.message.photo[-1].file_id
+            await context.bot.send_message(chat_id=user.id, text="Verifique sua identidade na BC Game 'nível básico', vá no seu perfil, configurações, verificação e envie print da tela da verificação básica completa.")
+            print("Profile photo received and stage updated to 3")
 
-            print(f"Vision API response: {response.full_text_annotation.text}")
-
-            # Exemplo de validação: verificar se certo texto está presente
-            if 'expected text' in response.full_text_annotation.text:
-                if stage == 2:
-                    user_data[user.id]['stage'] = 3
-                    user_data[user.id]['profile_photo'] = update.message.photo[-1].file_id
-                    await context.bot.send_message(chat_id=user.id, text="Verifique sua identidade na BC Game 'nível básico', vá no seu perfil, configurações, verificação e envie print da tela da verificação básica completa.")
-                    print("Profile photo received and stage updated to 3")
-
-                elif stage == 3:
-                    user_data[user.id]['stage'] = 4
-                    user_data[user.id]['verification_photo'] = update.message.photo[-1].file_id
-                    keyboard = [
-                        [InlineKeyboardButton("25R$ grátis", callback_data='gratis')],
-                        [InlineKeyboardButton("100R$ extra", callback_data='extra')]
-                    ]
-                    reply_markup = InlineKeyboardMarkup(keyboard)
-                    await context.bot.send_message(chat_id=user.id, text="4º Você quer receber 25R$ grátis sem depósito ou se depositar 100R$ ou mais recebe 100R$ extra.", reply_markup=reply_markup)
-                    print("Verification photo received and stage updated to 4")
-            else:
-                await context.bot.send_message(chat_id=user.id, text="A imagem enviada não é válida. Por favor, envie uma imagem correta.")
-                print("Invalid photo received")
-        except Exception as e:
-            print(f"Error processing image: {e}")
-            await context.bot.send_message(chat_id=user.id, text="Houve um erro ao processar a imagem. Tente novamente mais tarde.")
+        elif stage == 3:
+            user_data[user.id]['stage'] = 4
+            user_data[user.id]['verification_photo'] = update.message.photo[-1].file_id
+            keyboard = [
+                [InlineKeyboardButton("25R$ grátis", callback_data='gratis')],
+                [InlineKeyboardButton("100R$ extra", callback_data='extra')]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await context.bot.send_message(chat_id=user.id, text="4º Você quer receber 25R$ grátis sem depósito ou se depositar 100R$ ou mais recebe 100R$ extra.", reply_markup=reply_markup)
+            print("Verification photo received and stage updated to 4")
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
