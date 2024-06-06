@@ -140,5 +140,5 @@ if __name__ == "__main__":
         listen="0.0.0.0",
         port=int(os.environ.get('PORT', 8443)),
         url_path=TOKEN,
-        webhook_url=f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
+        webhook_url=f"https://telegram-bot-ep12.onrender.com/{TOKEN}"
     )
