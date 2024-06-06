@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
-ADMIN_USER_ID = os.getenv('ADMIN_USER_ID')  # Substitua pelo seu User ID ou Username
+ADMIN_USER_ID = int(os.getenv('ADMIN_USER_ID'))
 
 # Dicionário para armazenar informações dos usuários
 user_data = {}
@@ -57,8 +57,22 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         elif stage == 5:
             user_data[user.id]['stage'] = 6
             user_data[user.id]['deposit_photo'] = update.message.photo[-1].file_id
-            await context.bot.send_message(chat_id=user.id, text="Último passo, deixe um comentário no vídeo 'https://....' confirmando que recebeu o bônus (não se preocupe, se não receber seu bônus pode simplesmente remover o comentário).")
+            await context.bot.send_message(chat_id=user.id, text="Último passo, deixe um comentário no vídeo 'https://....' confirmando que recebeu o bônus (não se preocupe, se não receber seu bônus pode simplesmente remover o comentário) e envie a print da tela.")
             print("Deposit photo received and stage updated to 6")
+
+        elif stage == 6:
+            user_data[user.id]['stage'] = 7
+            user_data[user.id]['comment_confirmation'] = update.message.photo[-1].file_id
+            await context.bot.send_message(chat_id=user.id, text="Concluído, aguarde um pouco até aparecer seu bônus na conta.")
+
+            # Encaminhar todas as mensagens do usuário para o administrador
+            await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['profile_photo'])
+            await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['verification_photo'])
+            await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['deposit_photo'])
+            await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['comment_confirmation'])
+
+            await context.bot.send_message(chat_id=ADMIN_USER_ID, text=f"Usuário {user.first_name} completou o processo.")
+            print("Comment confirmation received and process completed")
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -76,20 +90,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(chat_id=user.id, text="Envie o print do depósito para continuar.")
     print(f"Button {query.data} clicked and stage updated to 5")
 
-async def comment_done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.message.from_user
-    if user.id in user_data and user_data[user.id]['stage'] == 6:
-        await context.bot.send_message(chat_id=user.id, text="Concluído, aguarde um pouco até aparecer seu bônus na conta.")
-
-        # Encaminhar todas as mensagens do usuário para o administrador
-        await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['profile_photo'])
-        await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['verification_photo'])
-        await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['deposit_photo'])
-
-        await context.bot.send_message(chat_id=ADMIN_USER_ID, text=f"Usuário {user.first_name} completou o processo.")
-
-        print("Comment confirmation received and process completed")
-
 if __name__ == "__main__":
     application = Application.builder().token(TOKEN).build()
 
@@ -98,7 +98,6 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("confirmar", confirmar))
     application.add_handler(MessageHandler(filters.PHOTO, receive_photo))
     application.add_handler(CallbackQueryHandler(button))
-    application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^/comentariodone$'), comment_done))
 
     application.run_webhook(
         listen="0.0.0.0",
