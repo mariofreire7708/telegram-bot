@@ -1,10 +1,20 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 import os
 import io
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+from google.cloud import vision
+from google.oauth2 import service_account
 
-# Pegar o token da variável de ambiente
+# Carregar variáveis de ambiente
+from dotenv import load_dotenv
+load_dotenv()
+
 TOKEN = os.getenv('TOKEN')
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+
+# Configurar a Google Cloud Vision API
+credentials = service_account.Credentials.from_service_account_file(GOOGLE_APPLICATION_CREDENTIALS)
+client = vision.ImageAnnotatorClient(credentials=credentials)
 
 # Dicionário para armazenar informações dos usuários
 user_data = {}
@@ -32,22 +42,38 @@ async def confirmar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     if user.id in user_data:
-        if user_data[user.id]['stage'] == 2:
-            user_data[user.id]['stage'] = 3
-            user_data[user.id]['profile_photo'] = update.message.photo[-1].file_id
-            await context.bot.send_message(chat_id=user.id, text="Verifique sua identidade na BC Game 'nível básico', vá no seu perfil, configurações, verificação e envie print da tela da verificação básica completa.")
-            print("Profile photo received and stage updated to 3")
+        stage = user_data[user.id]['stage']
+        photo_file = await context.bot.get_file(update.message.photo[-1].file_id)
+        photo_path = f'{user.id}_{stage}.jpg'
+        await photo_file.download(photo_path)
 
-        elif user_data[user.id]['stage'] == 3:
-            user_data[user.id]['stage'] = 4
-            user_data[user.id]['verification_photo'] = update.message.photo[-1].file_id
-            keyboard = [
-                [InlineKeyboardButton("25R$ grátis", callback_data='gratis')],
-                [InlineKeyboardButton("100R$ extra", callback_data='extra')]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            await context.bot.send_message(chat_id=user.id, text="4º Você quer receber 25R$ grátis sem depósito ou se depositar 100R$ ou mais recebe 100R$ extra.", reply_markup=reply_markup)
-            print("Verification photo received and stage updated to 4")
+        # Use Google Cloud Vision to analyze the photo
+        with io.open(photo_path, 'rb') as image_file:
+            content = image_file.read()
+        image = vision.Image(content=content)
+        response = client.document_text_detection(image=image)
+
+        # Exemplo de validação: verificar se certo texto está presente
+        if 'expected text' in response.full_text_annotation.text:
+            if stage == 2:
+                user_data[user.id]['stage'] = 3
+                user_data[user.id]['profile_photo'] = update.message.photo[-1].file_id
+                await context.bot.send_message(chat_id=user.id, text="Verifique sua identidade na BC Game 'nível básico', vá no seu perfil, configurações, verificação e envie print da tela da verificação básica completa.")
+                print("Profile photo received and stage updated to 3")
+
+            elif stage == 3:
+                user_data[user.id]['stage'] = 4
+                user_data[user.id]['verification_photo'] = update.message.photo[-1].file_id
+                keyboard = [
+                    [InlineKeyboardButton("25R$ grátis", callback_data='gratis')],
+                    [InlineKeyboardButton("100R$ extra", callback_data='extra')]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await context.bot.send_message(chat_id=user.id, text="4º Você quer receber 25R$ grátis sem depósito ou se depositar 100R$ ou mais recebe 100R$ extra.", reply_markup=reply_markup)
+                print("Verification photo received and stage updated to 4")
+        else:
+            await context.bot.send_message(chat_id=user.id, text="A imagem enviada não é válida. Por favor, envie uma imagem correta.")
+            print("Invalid photo received")
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -97,29 +123,15 @@ async def consultar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Nenhum dado encontrado para este usuário.")
 
-def main() -> None:
-    if TOKEN is None:
-        raise ValueError("No TOKEN provided in environment variables")
-    
+if __name__ == "__main__":
     application = Application.builder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("bonus", bonus))
     application.add_handler(CommandHandler("confirmar", confirmar))
-    application.add_handler(CommandHandler("consultar", consultar))
-    application.add_handler(MessageHandler(filters.PHOTO, receive_photo))
-    application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^/comentar$'), comment_done))
+    application.add_handler(MessageHandler(filters.PHOTO & filters.user(user_data.keys()), receive_photo))
     application.add_handler(CallbackQueryHandler(button))
+    application.add_handler(CommandHandler("consultar", consultar))
+    application.add_handler(CommandHandler("comment_done", comment_done))
 
-    # Usando o URL fornecido pelo Render para o webhook
-    webhook_url = f"https://telegram-bot-ep12.onrender.com/{TOKEN}"
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=int(os.environ.get("PORT", 8443)),
-        url_path=TOKEN,
-        webhook_url=webhook_url
-    )
-    print("Bot started with webhook URL:", webhook_url)
-
-if __name__ == '__main__':
-    main()
+    application.run_polling()
