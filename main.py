@@ -1,8 +1,9 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+import os
 
 # Coloque o token do seu bot aqui
-TOKEN = '7497749943:AAEtHg-3e97tDA_cAEsFcLwko6LAQfxtYG0'
+TOKEN = os.getenv('TOKEN')
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
@@ -42,7 +43,14 @@ def main() -> None:
     application.add_handler(CommandHandler("confirmar", confirmar))
     application.add_handler(CallbackQueryHandler(button))
     
-    application.run_polling()
+    # Usando o URL fornecido pelo Render para o webhook
+    webhook_url = f"https://<YOUR_RENDER_APP_NAME>.onrender.com/{TOKEN}"
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.environ.get("PORT", 8443)),
+        url_path=TOKEN,
+        webhook_url=webhook_url
+    )
 
 if __name__ == '__main__':
     main()
