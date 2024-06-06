@@ -1,6 +1,6 @@
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ChatMemberHandler
 from dotenv import load_dotenv
 
 # Carregar variáveis de ambiente
@@ -90,6 +90,12 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(chat_id=user.id, text="Envie o print do depósito para continuar.")
     print(f"Button {query.data} clicked and stage updated to 5")
 
+async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    for member in update.message.new_chat_members:
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=f"Olá {member.first_name}, bem-vindo ao grupo! Se quiser receber o seu bônus inicial na BC Game, mande uma mensagem para @BCGameOferta_bot com a mensagem /bonus.")
+        print(f"Welcome message sent to {member.first_name}")
+
 if __name__ == "__main__":
     application = Application.builder().token(TOKEN).build()
 
@@ -98,6 +104,7 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("confirmar", confirmar))
     application.add_handler(MessageHandler(filters.PHOTO, receive_photo))
     application.add_handler(CallbackQueryHandler(button))
+    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
 
     application.run_webhook(
         listen="0.0.0.0",
