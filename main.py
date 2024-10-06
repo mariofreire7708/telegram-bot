@@ -60,7 +60,7 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         elif stage == 5:
             user_data[user.id]['stage'] = 6
             user_data[user.id]['deposit_photo_message_id'] = update.message.message_id
-            await context.bot.send_message(chat_id=user.id, text="Último passo! Por favor, acesse o vídeo do YouTube neste link: [link_do_video].\n\nDeixe um comentário confirmando que você recebeu o bônus de 25R$. Não se preocupe, se algo der errado, você pode remover o comentário depois.\n\nAssim que deixar o comentário, envie uma captura de tela como confirmação.")
+            await context.bot.send_message(chat_id=user.id, text="Último passo! Por favor, acesse o vídeo do YouTube neste link: https://youtu.be/o7tC1rObMDg .\n\nDeixe um comentário confirmando que você recebeu o bônus de 25R$. Não se preocupe, se algo der errado, você pode remover o comentário depois.\n\nAssim que deixar o comentário, envie uma captura de tela como confirmação.")
             await context.bot.send_photo(chat_id=user.id, photo='https://github.com/mariofreire7708/telegram-bot/blob/main/stage3.jpg.png?raw=true')
             print("Deposit photo received and stage updated to 6")
 
