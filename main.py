@@ -16,21 +16,21 @@ user_data = {}
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text=f"Olá {user.first_name}, bem-vindo ao grupo! Se quiser receber o seu bônus inicial na BC Game, mande uma mensagem para @BCGameOferta_bot com a mensagem /bonus.")
+                                   text=f"Olá {user.first_name}, seja bem-vindo ao nosso grupo! Para receber o seu bônus exclusivo de 25R$ na BC Game, envie uma mensagem para o bot @BCGameOferta_bot com o comando /bonus. Certifique-se de seguir todos os passos com atenção para garantir o recebimento do bônus.")
     print(f"/start command received from {user.first_name}")
 
 async def bonus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     user_data[user.id] = {'stage': 1}
-    await context.bot.send_message(chat_id=user.id, text="Primeiramente, AVISO! Todos os passos deste processo têm de ser completados, caso contrario nao irá receber seu bonus, leia tudo com atencao e envie tudo o que é pedido. Já criou conta com o código MFREIRE no registo ou pelo link https://bcgame.top/i-mariofreire-n/?spin=true . Se j«á criou sua conta digite /confirmar para continuar")
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Verifique suas mensagens privadas para continuar o processo.")
+    await context.bot.send_message(chat_id=user.id, text="Atenção! Para receber seu bônus de 25R$, é necessário seguir todos os passos corretamente. Caso algum passo não seja completado, o bônus não será liberado.\n\nPrimeiramente, você já criou sua conta na BC Game com o código *MFREIRE* ou pelo link https://bcgame.top/i-mariofreire-n/?spin=true?\n\nSe sim, digite /confirmar para prosseguir.")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Por favor, verifique suas mensagens privadas para continuar com o processo.")
     print("/bonus command received")
 
 async def confirmar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     if user.id in user_data and user_data[user.id]['stage'] == 1:
         user_data[user.id]['stage'] = 2
-        await context.bot.send_message(chat_id=user.id, text="Envie print da tela do seu perfil BC Game, vá no canto superior direito, meu perfil e mande print da tela. (Como no exemplo da print enviada)")
+        await context.bot.send_message(chat_id=user.id, text="Perfeito! Agora precisamos que você envie uma captura de tela do seu perfil na BC Game.\n\nVá até o canto superior direito da tela, clique em 'Meu Perfil' e tire uma captura que mostre claramente o seu 'ID do Usuário'.\n\nEnvie a captura de tela aqui para continuar.")
         await context.bot.send_photo(chat_id=user.id, photo='https://github.com/mariofreire7708/telegram-bot/blob/main/stage1.jpg.png?raw=true')
         print("/confirmar command received")
 
@@ -42,7 +42,7 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         if stage == 2:
             user_data[user.id]['stage'] = 3
             user_data[user.id]['profile_photo_message_id'] = update.message.message_id
-            await context.bot.send_message(chat_id=user.id, text="Verifique sua identidade na BC Game 'nível básico', vá no seu perfil, configurações, verificação e envie print da tela da verificação básica completa. Tem de fazer a verificaçao basica para continuar!")
+            await context.bot.send_message(chat_id=user.id, text="Agora precisamos que você verifique sua identidade na BC Game.\n\nAcesse o seu perfil, vá até as configurações e clique em 'Verificação'. Por favor, conclua a verificação básica (nível obrigatório) e envie uma captura de tela que mostre que sua verificação foi completada.")
             await context.bot.send_photo(chat_id=user.id, photo='https://github.com/mariofreire7708/telegram-bot/blob/main/stage2.jpg.png?raw=true')
             print("Profile photo received and stage updated to 3")
 
@@ -54,20 +54,20 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 [InlineKeyboardButton("100R$ extra SE DEPOSITAR 100R$", callback_data='extra')]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            await context.bot.send_message(chat_id=user.id, text="Você quer receber 25R$ grátis sem depósito ou se depositar 100R$ ou mais recebe 100R$ extra.", reply_markup=reply_markup)
+            await context.bot.send_message(chat_id=user.id, text="Você quer receber 25R$ grátis sem depósito ou se depositar 100R$ ou mais recebe 100R$ extra?", reply_markup=reply_markup)
             print("Verification photo received and stage updated to 4")
 
         elif stage == 5:
             user_data[user.id]['stage'] = 6
             user_data[user.id]['deposit_photo_message_id'] = update.message.message_id
-            await context.bot.send_message(chat_id=user.id, text="Último passo, deixe um comentário no vídeo 'https://....' confirmando que recebeu o bônus (não se preocupe, se não receber seu bônus pode simplesmente remover o comentário) e envie a print da tela.")
+            await context.bot.send_message(chat_id=user.id, text="Último passo! Por favor, acesse o vídeo do YouTube neste link: [link_do_video].\n\nDeixe um comentário confirmando que você recebeu o bônus de 25R$. Não se preocupe, se algo der errado, você pode remover o comentário depois.\n\nAssim que deixar o comentário, envie uma captura de tela como confirmação.")
             await context.bot.send_photo(chat_id=user.id, photo='https://github.com/mariofreire7708/telegram-bot/blob/main/stage3.jpg.png?raw=true')
             print("Deposit photo received and stage updated to 6")
 
         elif stage == 6:
             user_data[user.id]['stage'] = 7
             user_data[user.id]['comment_confirmation_message_id'] = update.message.message_id
-            await context.bot.send_message(chat_id=user.id, text="Concluído, seu dados agora serao processados e irá receber seu bonus em breve! Aguarde um pouco até aparecer seu bônus na conta. Obrigado")
+            await context.bot.send_message(chat_id=user.id, text="Parabéns! Você completou todas as etapas com sucesso. Agora, seus dados estão sendo processados, e você deve receber seu bônus em breve. Aguarde um pouco, e logo ele aparecerá na sua conta. Obrigado por participar!")
 
             # Encaminhar todas as mensagens do usuário para o administrador
             await context.bot.forward_message(chat_id=ADMIN_USER_ID, from_chat_id=user.id, message_id=user_data[user.id]['profile_photo_message_id'])
